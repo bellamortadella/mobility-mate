@@ -198,3 +198,8 @@ input { font: inherit; color: inherit; }
 @keyframes tick { 0% { transform: scale(1.18); color: var(--accent); } 100% { transform: scale(1); } }
 .screen-in { animation: screenIn .3s ease-out; }
 @keyframes screenIn { from { opacity: 0; transform: translateY(8px); } }
+
+/* 30s / 60s toggle */
+.seg { display: flex; background: var(--card); border: 1.5px solid var(--line); border-radius: 999px; padding: 3px; gap: 2px; }
+.seg button { height: 30px; min-width: 46px; padding: 0 10px; border-radius: 999px; font-weight: 700; font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; transition: background .15s, color .15s; }
+.seg button.on { background: var(--ink); color: var(--bg); }

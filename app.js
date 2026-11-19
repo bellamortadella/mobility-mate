@@ -3,6 +3,8 @@
 const SWITCH_SECS = 5;   // pause to swap sides on one-sided moves
 const READY_SECS = 5;    // countdown before the first move
 const DEFAULT_DUR = 30;
+const DURATIONS = [30, 60]; // the per-move time options
+const snapDur = (d) => (d > 45 ? 60 : 30);
 const DEFAULT_REST = 10;
 
 const $app = document.getElementById("app");
@@ -165,7 +167,7 @@ function loadFlows() {
     if (raw) {
       // Drop moves that no longer exist; drop flows left empty by that.
       const saved = JSON.parse(raw)
-        .map((f) => ({ ...f, items: f.items.filter((i) => exById[i.exId]) }))
+        .map((f) => ({ ...f, items: f.items.filter((i) => exById[i.exId]).map((i) => ({ ...i, dur: snapDur(i.dur) })) }))
         .filter((f) => f.items.length);
       if (saved.length) return saved;
     }
@@ -258,6 +260,12 @@ function renderBuilder(flowId) {
   drawBuilder();
 }
 
+// A two-option pill toggle (30s / 60s). `attr` tags each button; `value` is the active one.
+function segToggle(attr, value) {
+  return `<div class="seg">${DURATIONS.map((d) =>
+    `<button ${attr} data-v="${d}" class="${d === value ? "on" : ""}" aria-pressed="${d === value}">${d}s</button>`).join("")}</div>`;
+}
+
 function drawBuilder() {
   const items = draft.items.map((it, i) => {
     const ex = exById[it.exId];
@@ -274,11 +282,7 @@ function drawBuilder() {
             <button data-down="${i}" ${i === draft.items.length - 1 ? "disabled" : ""} aria-label="Move down">${ICON.down}</button>
             <button data-del="${i}" aria-label="Remove">${ICON.trash}</button>
           </div>
-          <div class="stepper">
-            <button data-dur="${i}" data-d="-15">−</button>
-            <span class="val">${fmt(it.dur)}${it.dur < 60 ? "s" : ""}</span>
-            <button data-dur="${i}" data-d="15">+</button>
-          </div>
+          ${segToggle(`data-dur="${i}"`, it.dur)}
         </div>
       </div>`;
   }).join("");
@@ -298,6 +302,10 @@ function drawBuilder() {
         <button id="rest-plus">+</button>
       </div>
     </div>
+    ${draft.items.length > 1 ? `<div class="row-setting">
+      <label>Set all moves</label>
+      ${segToggle("data-all", draft.items.every((it) => it.dur === draft.items[0].dur) ? draft.items[0].dur : null)}
+    </div>` : ""}
     <div class="items">${items}</div>
     <button class="btn btn-ghost add-btn" id="add">+ Add exercise</button>
     <div class="builder-foot">
@@ -321,8 +329,11 @@ function drawBuilder() {
   document.getElementById("rest-plus").onclick = () => { draft.rest = Math.min(60, draft.rest + 5); drawBuilder(); };
   document.getElementById("add").onclick = openLibrary;
   $app.querySelectorAll("[data-dur]").forEach((b) => b.onclick = () => {
-    const it = draft.items[+b.dataset.dur];
-    it.dur = Math.min(600, Math.max(15, it.dur + +b.dataset.d));
+    draft.items[+b.dataset.dur].dur = +b.dataset.v;
+    drawBuilder();
+  });
+  $app.querySelectorAll("[data-all]").forEach((b) => b.onclick = () => {
+    draft.items.forEach((it) => (it.dur = +b.dataset.v));
     drawBuilder();
   });
   const swap = (i, j) => { [draft.items[i], draft.items[j]] = [draft.items[j], draft.items[i]]; drawBuilder(); };
