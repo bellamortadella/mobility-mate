@@ -2,7 +2,7 @@
 
 const SWITCH_SECS = 5;   // pause to swap sides on one-sided moves
 const READY_SECS = 5;    // countdown before the first move
-const DEFAULT_DUR = 45;
+const DEFAULT_DUR = 30;
 const DEFAULT_REST = 10;
 
 const $app = document.getElementById("app");
@@ -33,20 +33,16 @@ function lerpPose(a, b, t) {
   return out;
 }
 const ease = (x) => (1 - Math.cos(Math.PI * x)) / 2;
-// 0 → hold start → move → hold end → move back
-function pingPong(phase) {
-  if (phase < 0.15) return 0;
-  if (phase < 0.5) return ease((phase - 0.15) / 0.35);
-  if (phase < 0.65) return 1;
-  return 1 - ease((phase - 0.65) / 0.35);
-}
+const HOLD = 0.3; // share of each step spent holding the pose before moving on
 
 class Figure {
-  constructor(poses, { animate = true, period = 3600, stroke = 9, accent = false, flip = false, ground = true } = {}) {
-    this.poses = poses;
+  // `period` = time for one full cycle of a 2-pose move; longer sequences get the same time per step.
+  // `pass` = indexes of poses the figure flows through without pausing.
+  constructor(poses, { animate = true, period = 3600, stroke = 9, accent = false, flip = false, ground = true, front = false, pass = [] } = {}) {
+    this.setPath(poses, pass);
     this.animate = animate;
-    this.period = period;
-    this.offset = Math.random() * period;
+    this.step = period / 2;
+    this.offset = Math.random() * period * 2;
     const svg = document.createElementNS(SVGNS, "svg");
     svg.setAttribute("viewBox", "0 0 240 200");
     svg.setAttribute("class", "fig");
@@ -62,8 +58,9 @@ class Figure {
     };
     const line = { fill: "none", stroke: ink, "stroke-width": stroke, "stroke-linecap": "round", "stroke-linejoin": "round" };
     if (ground) mk("line", { x1: 30, x2: 210, y1: 188, y2: 188, stroke: "var(--line)", "stroke-width": 4, "stroke-linecap": "round" });
-    this.armB = mk("path", { ...line, opacity: 0.35 });
-    this.legB = mk("path", { ...line, opacity: 0.35 });
+    const far = front ? 1 : 0.35;
+    this.armB = mk("path", { ...line, opacity: far });
+    this.legB = mk("path", { ...line, opacity: far });
     this.spine = mk("path", line);
     this.legA = mk("path", line);
     this.armA = mk("path", line);
@@ -72,7 +69,32 @@ class Figure {
     this.draw(poses[0]);
     if (animate && poses.length > 1) liveFigures.add(this);
   }
-  setPoses(poses) { this.poses = poses; this.draw(poses[0]); }
+  // Group the pose list into moves: each move starts at a pose we pause on and
+  // flows through any pass-through poses until the next pause pose.
+  setPath(poses, pass = []) {
+    this.poses = poses;
+    const n = poses.length;
+    let holds = poses.map((_, i) => i).filter((i) => !pass.includes(i));
+    if (!holds.length) holds = [0];
+    let start = 0;
+    this.moves = holds.map((h, j) => {
+      const next = holds[(j + 1) % holds.length];
+      const path = [h];
+      let i = h;
+      do { i = (i + 1) % n; path.push(i); } while (i !== next);
+      const move = { path, start, segs: path.length - 1 };
+      start += move.segs;
+      return move;
+    });
+    this.totalSegs = start;
+  }
+  setPoses(poses, front, pass) {
+    this.setPath(poses, pass);
+    const far = front ? 1 : 0.35;
+    this.armB.setAttribute("opacity", far);
+    this.legB.setAttribute("opacity", far);
+    this.draw(poses[0]);
+  }
   draw(p) {
     const P = (k) => `${p[k][0].toFixed(1)} ${p[k][1].toFixed(1)}`;
     // Quadratic curve through neck → mid → hip (control point chosen so the curve passes through mid)
@@ -87,8 +109,15 @@ class Figure {
     this.headEl.setAttribute("cy", p.head[1]);
   }
   tick(now) {
-    const phase = ((now + this.offset) % this.period) / this.period;
-    this.draw(lerpPose(this.poses[0], this.poses[1], pingPong(phase)));
+    const t = ((now + this.offset) % (this.step * this.totalSegs)) / this.step;
+    const mv = this.moves.find((m) => t < m.start + m.segs) || this.moves[0];
+    const local = t - mv.start;
+    const P = this.poses;
+    if (local < HOLD) return this.draw(P[mv.path[0]]);
+    // One smooth ease across the whole move, so pass-through poses don't cause a pause.
+    const u = ease((local - HOLD) / (mv.segs - HOLD)) * mv.segs;
+    const s = Math.min(Math.floor(u), mv.segs - 1);
+    this.draw(lerpPose(P[mv.path[s]], P[mv.path[s + 1]], u - s));
   }
 }
 
@@ -112,19 +141,34 @@ const uid = () => Math.random().toString(36).slice(2, 9);
 
 function seedFlows() {
   return [{
-    id: uid(), name: "Morning Unlock", rest: DEFAULT_REST,
+    id: uid(), name: "Morning Flow", rest: DEFAULT_REST,
     items: [
-      { exId: "cat-cow", dur: 45 },
-      { exId: "deep-squat", dur: 60 },
-      { exId: "hip-flexor", dur: 45 },
-      { exId: "forward-fold", dur: 45 },
+      { exId: "body-bounces", dur: 30 },
+      { exId: "neck-circles", dur: 30 },
+      { exId: "body-waves", dur: 30 },
+      { exId: "vertical-arm-swings", dur: 30 },
+      { exId: "dead-arm-swings", dur: 30 },
+      { exId: "horse-stance", dur: 30 },
+      { exId: "down-up-dogs", dur: 30 },
+      { exId: "deep-squat-reach", dur: 30 },
+      { exId: "deep-squat-knee-taps", dur: 30 },
+      { exId: "straddle", dur: 30 },
+      { exId: "ninety-ninety", dur: 30 },
+      { exId: "crab-pose", dur: 30 },
+      { exId: "cossack", dur: 30 },
     ],
   }];
 }
 function loadFlows() {
   try {
     const raw = localStorage.getItem(STORE_KEY);
-    if (raw) return JSON.parse(raw).map((f) => ({ ...f, items: f.items.filter((i) => exById[i.exId]) }));
+    if (raw) {
+      // Drop moves that no longer exist; drop flows left empty by that.
+      const saved = JSON.parse(raw)
+        .map((f) => ({ ...f, items: f.items.filter((i) => exById[i.exId]) }))
+        .filter((f) => f.items.length);
+      if (saved.length) return saved;
+    }
   } catch (e) { /* storage unavailable */ }
   return seedFlows();
 }
@@ -194,7 +238,7 @@ function renderHome() {
     <button class="btn btn-ghost new-flow" id="new">+ New flow</button>
   `);
 
-  mountFigure(document.getElementById("hero"), EXERCISES[0].poses, { stroke: 11, ground: false, period: 3000 });
+  mountFigure(document.getElementById("hero"), exById["body-waves"].poses, { stroke: 11, ground: false, period: 2400, pass: exById["body-waves"].pass });
   document.getElementById("new").onclick = () => renderBuilder(null);
   $app.querySelectorAll("[data-edit]").forEach((b) => b.onclick = (e) => { e.stopPropagation(); renderBuilder(b.dataset.edit); });
   $app.querySelectorAll("[data-play]").forEach((c) => c.onclick = () => {
@@ -265,7 +309,7 @@ function drawBuilder() {
 
   $app.querySelectorAll("[data-thumb]").forEach((el) => {
     const ex = exById[draft.items[+el.dataset.thumb].exId];
-    mountFigure(el, [ex.poses[1]], { animate: false, stroke: 12, ground: false });
+    mountFigure(el, [ex.poses[1]], { animate: false, stroke: 12, ground: false, front: ex.front });
   });
 
   const title = document.getElementById("title");
@@ -319,7 +363,7 @@ function openLibrary() {
       <div class="lib">${cards}</div>
       <button class="btn btn-ink" id="done-add" style="width:100%;margin-top:16px">Done</button>
     </div>`;
-  $sheet.querySelectorAll("[data-libfig]").forEach((el) => mountFigure(el, exById[el.dataset.libfig].poses, { stroke: 10 }));
+  $sheet.querySelectorAll("[data-libfig]").forEach((el) => mountFigure(el, exById[el.dataset.libfig].poses, { stroke: 10, front: exById[el.dataset.libfig].front, pass: exById[el.dataset.libfig].pass }));
   const close = () => { $sheet.innerHTML = ""; drawBuilder(); };
   document.getElementById("scrim").onclick = close;
   document.getElementById("done-add").onclick = close;
@@ -409,7 +453,7 @@ function drawPlayerShell() {
       </div>
     </div>
   `);
-  player.fig = mountFigure(document.getElementById("ringfig"), player.steps[0].ex.poses, { stroke: 9, period: 3600 });
+  player.fig = mountFigure(document.getElementById("ringfig"), player.steps[0].ex.poses, { stroke: 9, period: 3600, front: player.steps[0].ex.front, pass: player.steps[0].ex.pass });
   document.getElementById("quit").onclick = () => { if (confirm("End this flow?")) renderHome(); };
   document.getElementById("pp").onclick = togglePause;
   document.getElementById("next").onclick = () => goStep(player.i + 1);
@@ -429,7 +473,7 @@ function enterStep() {
   document.getElementById("side").innerHTML = s.side ? `<span class="side-pill">${s.side.toUpperCase()}</span>` : "";
   document.getElementById("cue").textContent = s.type === "work" ? s.ex.cue : s.type === "switch" ? "Swap to the other side." : s.ex.cue;
   document.getElementById("counter").textContent = `${s.idx + 1}/${player.flow.items.length}`;
-  player.fig.setPoses(s.ex.poses);
+  player.fig.setPoses(s.ex.poses, s.ex.front, s.ex.pass);
   // Mirror the figure for the right side so it reads as "the other leg"
   player.fig.svg.firstChild.setAttribute("transform", s.side === "Right" ? "translate(240 0) scale(-1 1)" : "");
   // Figure animates during work; holds start pose while resting/getting ready
@@ -508,7 +552,7 @@ function finishFlow() {
       <button class="btn" id="again" style="width:100%">Go again</button>
     </div>
   `);
-  mountFigure(document.getElementById("donefig"), CELEBRATE, { accent: true, period: 900, stroke: 10 });
+  mountFigure(document.getElementById("donefig"), CELEBRATE, { accent: true, period: 900, stroke: 10, front: true });
   document.getElementById("home").onclick = renderHome;
   document.getElementById("again").onclick = () => startPlayer(flow);
 }
