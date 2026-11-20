@@ -298,6 +298,40 @@ const rotateUpper = (p, deg) => {
 const ARM_UP = rotateUpper(ARM_DRAPE, 62);
 ARM_UP.mid = [ARM_UP.mid[0] + 4, ARM_UP.mid[1] + 4];
 
+// ---- Mat moves ----
+// Hip switches: seated, prayer hands; knees lift through the middle and drop to the other side.
+const HS_SIT = { head: [120, 104], neck: [120, 124], mid: [120, 150], hip: [120, 176],
+  kA: [146, 140], fA: [164, 180], kB: [94, 140], fB: [76, 180] };
+const HS_UP = { ...HS_SIT, eA: [140, 148], hA: [122, 134], eB: [100, 148], hB: [118, 134] };
+const HS_SIDE = { ...HS_SIT, head: [112, 104], neck: [118, 124], kA: [168, 168], kB: [110, 166],
+  eA: [134, 146], hA: [114, 134], eB: [96, 142], hB: [110, 132] };
+
+// Shoulder floor taps: all fours, hands wide, drop one shoulder to the floor.
+const QUAD = { hip: [120, 118], kA: [134, 184], fA: [136, 184], kB: [106, 184], fB: [104, 184],
+  mid: [120, 138], neck: [120, 152], head: [120, 168] };
+const TAP_C = { ...QUAD, eA: [160, 166], hA: [200, 184], eB: [80, 166], hB: [40, 184] };
+const TAP_L = { ...QUAD, mid: [116, 142], neck: [108, 164], head: [96, 176],
+  eA: [156, 158], hA: [200, 184], eB: [70, 178], hB: [40, 184] };
+
+// Angel wings: on the knees, forehead down; arms open wide, then thread under and cross.
+const WING_BASE = { hip: [120, 126], kA: [142, 184], fA: [144, 184], kB: [98, 184], fB: [96, 184],
+  mid: [120, 146], neck: [120, 162], head: [120, 175] };
+const WING_OPEN = { ...WING_BASE, eA: [162, 178], hA: [196, 170], eB: [78, 178], hB: [44, 170] };
+const WING_CROSS = { ...WING_BASE, eA: [142, 182], hA: [84, 180], eB: [98, 180], hB: [156, 176] };
+
+// Happy baby: on the back, shins vertical, hands on the feet, pull knees down by the chest.
+const BABY = { head: [184, 172], neck: [164, 176], mid: [136, 178], hip: [106, 174],
+  kA: [142, 152], fA: [144, 114], kB: [138, 150], fB: [140, 112],
+  eA: [156, 144], hA: [146, 112], eB: [152, 142], hB: [142, 110] };
+const BABY_PULL = { ...BABY, kA: [148, 160], fA: [150, 124], kB: [144, 158], fB: [146, 122],
+  eA: [164, 148], hA: [152, 122], eB: [160, 146], hB: [148, 120] };
+
+// Neck rolls: sit on the heels, arms out wide; head rolls side, down, side in a U.
+const HEELS = { hip: [120, 152], kA: [138, 180], fA: [132, 184], kB: [102, 180], fB: [108, 184],
+  mid: [120, 124], neck: [120, 96], eA: [150, 98], hA: [178, 93], eB: [90, 98], hB: [62, 93] };
+const NECK_U = [[103, 82], [108, 86], [120, 88], [132, 86], [137, 82], [132, 86], [120, 88], [108, 86]]
+  .map((head) => ({ ...HEELS, head }));
+
 const EXERCISES = [
   { id: "body-bounces", name: "Body Bounces", front: true,
     cue: "Stay loose. Small, springy hops.",
@@ -396,6 +430,21 @@ const EXERCISES = [
   { id: "couch-arm-side-bend", name: "Couch-Arm Side Bend", front: true, sided: true, prop: "couch-arm",
     cue: "Lie sideways over the armrest. Drape down into the stretch, then side-crunch up.",
     poses: [ARM_DRAPE, ARM_UP] },
+  { id: "hip-switches", name: "Hip Switches", front: true,
+    cue: "Sit tall, prayer hands. Lift the knees through the middle and drop them to the other side.",
+    poses: [HS_SIDE, HS_UP, mirror(HS_SIDE), HS_UP], pass: [1, 3] },
+  { id: "shoulder-floor-taps", name: "Shoulder Floor Taps", front: true,
+    cue: "All fours, hands wide. Lower one shoulder to the floor, then the other.",
+    poses: [TAP_C, TAP_L, TAP_C, mirror(TAP_L)] },
+  { id: "angel-wings", name: "Angel Wings", front: true,
+    cue: "On the knees, forehead down. Open the arms wide, then thread them under and across.",
+    poses: [WING_OPEN, WING_CROSS, WING_OPEN, mirror(WING_CROSS)], arcArms: true },
+  { id: "happy-baby", name: "Happy Baby", front: false,
+    cue: "On your back, hold the feet, shins vertical. Gently pull the knees down by your chest.",
+    poses: [BABY, BABY_PULL] },
+  { id: "neck-rolls", name: "Neck Rolls", front: true,
+    cue: "Sit on the heels, arms out wide. Roll the head side, down and up to the other side.",
+    poses: NECK_U, pass: [1, 2, 3, 5, 6, 7], stepMs: 700 },
 ];
 
 // Home screen logo: the original cat-cow on all fours (reads as "ML").
