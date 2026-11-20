@@ -5,7 +5,7 @@ const READY_SECS = 5;    // countdown before the first move
 const DEFAULT_DUR = 30;
 const DURATIONS = [30, 60]; // the per-move time options
 const snapDur = (d) => (d > 45 ? 60 : 30);
-const DEFAULT_REST = 10;
+const DEFAULT_REST = 10; // fixed 10s transition between moves (no longer editable in the builder)
 
 const $app = document.getElementById("app");
 const $sheet = document.getElementById("sheet-root");
@@ -336,14 +336,6 @@ function drawBuilder() {
       <span style="width:44px"></span>
     </div>
     <input class="title-input" id="title" placeholder="Name your flow" value="${esc(draft.name)}" maxlength="40" />
-    <div class="row-setting">
-      <label>Rest between moves</label>
-      <div class="stepper">
-        <button id="rest-minus">−</button>
-        <span class="val">${draft.rest}s</span>
-        <button id="rest-plus">+</button>
-      </div>
-    </div>
     ${draft.items.length > 1 ? `<div class="row-setting">
       <label>Set all moves</label>
       ${segToggle("data-all", draft.items.every((it) => it.dur === draft.items[0].dur) ? draft.items[0].dur : null)}
@@ -367,8 +359,6 @@ function drawBuilder() {
   if (draft.isNew && !draft.name) title.focus();
 
   document.getElementById("back").onclick = renderHome;
-  document.getElementById("rest-minus").onclick = () => { draft.rest = Math.max(0, draft.rest - 5); drawBuilder(); };
-  document.getElementById("rest-plus").onclick = () => { draft.rest = Math.min(60, draft.rest + 5); drawBuilder(); };
   document.getElementById("add").onclick = openLibrary;
   // Slide the thumb in place first, then redraw once the glide has finished.
   const slide = (seg, v) => {
