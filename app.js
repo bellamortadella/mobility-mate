@@ -280,7 +280,7 @@ function renderHome() {
     <button class="btn btn-ghost new-flow" id="new">+ New flow</button>
   `);
 
-  mountFigure(document.getElementById("hero"), exById["crab-pose"].poses, { stroke: 11, ground: false, period: 2400, ...exOpts(exById["crab-pose"]) });
+  mountFigure(document.getElementById("hero"), LOGO, { stroke: 11, ground: false, period: 3000 });
   document.getElementById("new").onclick = () => renderBuilder(null);
   $app.querySelectorAll("[data-edit]").forEach((b) => b.onclick = (e) => { e.stopPropagation(); renderBuilder(b.dataset.edit); });
   $app.querySelectorAll("[data-play]").forEach((c) => c.onclick = () => {

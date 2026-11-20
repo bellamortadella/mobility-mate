@@ -1,6 +1,6 @@
 // Offline support. Network first, so new versions show up right away;
 // falls back to the last cached copy when there's no connection.
-const CACHE = "mobilitymate-v1";
+const CACHE = "mobilitymate-v2";
 const SHELL = ["./", "index.html", "styles.css", "exercises.js", "app.js", "manifest.webmanifest", "icons/icon-192.png"];
 
 self.addEventListener("install", (e) => {

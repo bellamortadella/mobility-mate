@@ -398,6 +398,16 @@ const EXERCISES = [
     poses: [ARM_DRAPE, ARM_UP] },
 ];
 
+// Home screen logo: the original cat-cow on all fours (reads as "ML").
+const LOGO = [
+  { head: [70, 130], neck: [88, 108], mid: [122, 86], hip: [156, 106],
+    eA: [89, 144], hA: [89, 182], eB: [95, 144], hB: [95, 182],
+    kA: [157, 180], fA: [202, 182], kB: [151, 180], fB: [196, 182] },
+  { head: [68, 90], neck: [88, 110], mid: [122, 126], hip: [156, 108],
+    eA: [89, 145], hA: [89, 182], eB: [95, 145], hB: [95, 182],
+    kA: [157, 180], fA: [202, 182], kB: [151, 180], fB: [196, 182] },
+];
+
 // Pose used on the "done" screen.
 const CELEBRATE = [
   { ...STAND, eA: [142, 44], hA: [162, 26], eB: [98, 44], hB: [78, 26] },
