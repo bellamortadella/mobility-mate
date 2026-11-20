@@ -101,11 +101,21 @@ input { font: inherit; color: inherit; }
 
 .items { display: flex; flex-direction: column; gap: 10px; }
 .item {
-  background: var(--card); border: 1.5px solid var(--line); border-radius: 18px;
-  padding: 10px 10px 10px 8px; display: grid;
-  grid-template-columns: 56px 1fr auto; gap: 10px; align-items: center;
+  position: relative; background: var(--card); border: 1.5px solid var(--line); border-radius: 18px;
+  padding: 10px 10px 10px 0; display: grid; overflow: hidden;
+  grid-template-columns: 48px 44px 1fr auto; gap: 10px; align-items: center;
+  transition: border-color .15s, box-shadow .15s, transform .2s cubic-bezier(.2, .8, .3, 1);
 }
-.item .thumb { width: 56px; height: 48px; }
+@media (hover: hover) { .item:hover { border-color: var(--accent); } }
+.item .num {
+  align-self: stretch; margin: -10px 0; display: grid; place-items: center;
+  border-right: 1.5px solid var(--line); background: var(--bg);
+  font-size: 26px; font-weight: 800; letter-spacing: -0.03em; font-variant-numeric: tabular-nums;
+  cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none;
+}
+.item.dragging { z-index: 5; border-color: var(--accent); box-shadow: 0 12px 28px rgba(27, 26, 23, .18); transition: border-color .15s, box-shadow .15s; }
+.item.dragging .num { cursor: grabbing; color: var(--accent); }
+.item .thumb { width: 44px; height: 48px; }
 .item .name { font-weight: 700; font-size: 16px; line-height: 1.15; }
 .item .sub { color: var(--muted); font-size: 13px; margin-top: 2px; }
 .item .controls { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }

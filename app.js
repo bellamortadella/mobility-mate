@@ -314,8 +314,10 @@ document.addEventListener("pointerdown", (e) => {
   if (!b || b.disabled) return;
   tapSound(b.matches(".btn-primary, .big, .play-chip") ? 0.75 : 1);
 }, { passive: true });
-function show(html) {
+// quiet = redraw in place (no fade-in, keep scroll position), e.g. after reordering.
+function show(html, quiet = false) {
   $app.innerHTML = html;
+  if (quiet) return;
   $app.classList.remove("screen-in");
   void $app.offsetWidth;
   $app.classList.add("screen-in");
@@ -381,11 +383,57 @@ function segToggle(attr, value) {
     `<button ${attr} data-v="${d}" class="${d === value ? "on" : ""}" aria-pressed="${d === value}">${d}s</button>`).join("")}</div>`;
 }
 
-function drawBuilder() {
+// Drag a move by its number panel. The card follows the finger, the others slide
+// out of the way, and on release the order is saved and the list redrawn in place.
+function startDrag(e) {
+  if (e.button > 0) return;
+  e.preventDefault();
+  const handle = e.currentTarget;
+  const from = +handle.dataset.drag;
+  const cards = [...$app.querySelectorAll("[data-item]")];
+  const card = cards[from];
+  const rects = cards.map((c) => c.getBoundingClientRect());
+  const step = cards.length > 1 ? rects[1].top - rects[0].top : rects[0].height + 10;
+  const startY = e.clientY;
+  let to = from;
+  card.classList.add("dragging");
+  handle.setPointerCapture(e.pointerId);
+  vibrate(15);
+  const move = (ev) => {
+    const dy = ev.clientY - startY;
+    card.style.transform = `translateY(${dy}px) scale(1.02)`;
+    to = Math.max(0, Math.min(cards.length - 1, from + Math.round(dy / step)));
+    cards.forEach((c, k) => {
+      if (k === from) return;
+      const shift = from < to && k > from && k <= to ? -step : from > to && k < from && k >= to ? step : 0;
+      c.style.transform = shift ? `translateY(${shift}px)` : "";
+      c.querySelector(".num").textContent = k + 1 + (shift ? (shift < 0 ? -1 : 1) : 0);
+    });
+    card.querySelector(".num").textContent = to + 1;
+  };
+  const end = () => {
+    handle.removeEventListener("pointermove", move);
+    handle.removeEventListener("pointerup", end);
+    handle.removeEventListener("pointercancel", end);
+    if (to !== from) {
+      const [it] = draft.items.splice(from, 1);
+      draft.items.splice(to, 0, it);
+      vibrate(10);
+      tapSound();
+    }
+    drawBuilder(true);
+  };
+  handle.addEventListener("pointermove", move);
+  handle.addEventListener("pointerup", end);
+  handle.addEventListener("pointercancel", end);
+}
+
+function drawBuilder(quiet = false) {
   const items = draft.items.map((it, i) => {
     const ex = exById[it.exId];
     return `
-      <div class="item">
+      <div class="item" data-item="${i}">
+        <div class="num" data-drag="${i}" aria-label="Drag to reorder">${i + 1}</div>
         <div class="thumb" data-thumb="${i}"></div>
         <div>
           <div class="name">${esc(ex.name)}</div>
@@ -393,8 +441,6 @@ function drawBuilder() {
         </div>
         <div class="controls">
           <div class="tools">
-            <button data-up="${i}" ${i === 0 ? "disabled" : ""} aria-label="Move up">${ICON.up}</button>
-            <button data-down="${i}" ${i === draft.items.length - 1 ? "disabled" : ""} aria-label="Move down">${ICON.down}</button>
             <button data-del="${i}" aria-label="Remove">${ICON.trash}</button>
           </div>
           ${segToggle(`data-dur="${i}"`, it.dur)}
@@ -420,7 +466,7 @@ function drawBuilder() {
       <button class="btn btn-primary" id="save" ${draft.items.length ? "" : "disabled style='opacity:.4'"}>Save flow</button>
       ${draft.isNew ? "" : `<button class="danger" id="delete">Delete flow</button>`}
     </div>
-  `);
+  `, quiet);
 
   $app.querySelectorAll("[data-thumb]").forEach((el) => {
     const ex = exById[draft.items[+el.dataset.thumb].exId];
@@ -460,10 +506,8 @@ function drawBuilder() {
     $app.querySelectorAll(".seg").forEach((seg) => slide(seg, v));
     later();
   });
-  const swap = (i, j) => { [draft.items[i], draft.items[j]] = [draft.items[j], draft.items[i]]; drawBuilder(); };
-  $app.querySelectorAll("[data-up]").forEach((b) => b.onclick = () => swap(+b.dataset.up, +b.dataset.up - 1));
-  $app.querySelectorAll("[data-down]").forEach((b) => b.onclick = () => swap(+b.dataset.down, +b.dataset.down + 1));
-  $app.querySelectorAll("[data-del]").forEach((b) => b.onclick = () => { draft.items.splice(+b.dataset.del, 1); drawBuilder(); });
+  $app.querySelectorAll("[data-del]").forEach((b) => b.onclick = () => { draft.items.splice(+b.dataset.del, 1); drawBuilder(true); });
+  $app.querySelectorAll("[data-drag]").forEach((h) => h.addEventListener("pointerdown", startDrag));
 
   document.getElementById("save").onclick = () => {
     if (!draft.items.length) return;
