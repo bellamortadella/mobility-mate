@@ -419,21 +419,22 @@ function openLibrary() {
   const close = () => { $sheet.innerHTML = ""; drawBuilder(); };
   document.getElementById("scrim").onclick = close;
   document.getElementById("done-add").onclick = close;
-  // Orange outline + count on moves already in the flow, and a running total.
+  // Orange outline + position in the flow on picked moves, and a running total.
   const refresh = () => {
-    const counts = {};
-    for (const it of draft.items) counts[it.exId] = (counts[it.exId] || 0) + 1;
     $sheet.querySelectorAll("[data-add]").forEach((b) => {
-      const n = counts[b.dataset.add] || 0;
-      b.classList.toggle("selected", n > 0);
-      b.querySelector(".count").textContent = n > 1 ? `×${n}` : n ? "✓" : "";
+      const pos = draft.items.findIndex((it) => it.exId === b.dataset.add);
+      b.classList.toggle("selected", pos >= 0);
+      b.querySelector(".count").textContent = pos >= 0 ? pos + 1 : "";
     });
     const total = draft.items.length;
     document.getElementById("sel-total").textContent = total ? `${total} selected` : "";
     document.getElementById("done-add").textContent = total ? `Done · ${total} ${total === 1 ? "move" : "moves"}` : "Done";
   };
+  // Tap to pick, tap again to unpick.
   $sheet.querySelectorAll("[data-add]").forEach((b) => b.onclick = () => {
-    draft.items.push({ exId: b.dataset.add, dur: DEFAULT_DUR });
+    const id = b.dataset.add;
+    if (draft.items.some((it) => it.exId === id)) draft.items = draft.items.filter((it) => it.exId !== id);
+    else draft.items.push({ exId: id, dur: DEFAULT_DUR });
     refresh();
     const c = b.querySelector(".count");
     c.classList.remove("bump"); void c.offsetWidth; c.classList.add("bump");
