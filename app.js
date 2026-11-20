@@ -29,21 +29,42 @@ const JOINTS = ["head", "neck", "mid", "hip", "eA", "hA", "eB", "hB", "kA", "fA"
 const SVGNS = "http://www.w3.org/2000/svg";
 const liveFigures = new Set();
 
-function lerpPose(a, b, t) {
+function lerpPose(a, b, t, arc = false) {
   const out = {};
   for (const k of JOINTS) out[k] = [a[k][0] + (b[k][0] - a[k][0]) * t, a[k][1] + (b[k][1] - a[k][1]) * t];
+  if (arc) for (const [e, h] of [["eA", "hA"], ["eB", "hB"]]) {
+    // Swing each arm segment by angle (not straight-line), so arms keep their length mid-swing.
+    const seg = (from, to, p) => [p[to][0] - from[0], p[to][1] - from[1]];
+    const turn = (va, vb) => {
+      const la = Math.hypot(...va), lb = Math.hypot(...vb);
+      let aa = Math.atan2(va[1], va[0]), ab = Math.atan2(vb[1], vb[0]);
+      let d = ab - aa;
+      d = Math.atan2(Math.sin(d), Math.cos(d)); // shortest way round
+      const ang = aa + d * t, len = la + (lb - la) * t;
+      return [Math.cos(ang) * len, Math.sin(ang) * len];
+    };
+    const up = turn(seg(a.neck, e, a), seg(b.neck, e, b));
+    out[e] = [out.neck[0] + up[0], out.neck[1] + up[1]];
+    const fore = turn(seg(a[e], h, a), seg(b[e], h, b));
+    out[h] = [out[e][0] + fore[0], out[e][1] + fore[1]];
+  }
   return out;
 }
+// Figure settings that come from an exercise.
+const exOpts = (ex) => ({ front: ex.front, pass: ex.pass, stepMs: ex.stepMs, arc: ex.arcArms });
 const ease = (x) => (1 - Math.cos(Math.PI * x)) / 2;
 const HOLD = 0.3; // share of each step spent holding the pose before moving on
 
 class Figure {
   // `period` = time for one full cycle of a 2-pose move; longer sequences get the same time per step.
   // `pass` = indexes of poses the figure flows through without pausing.
-  constructor(poses, { animate = true, period = 3600, stroke = 9, accent = false, flip = false, ground = true, front = false, pass = [] } = {}) {
+  // `stepMs` = fixed time per step (for fast moves like arm circles); `arc` = swing arms by angle.
+  constructor(poses, { animate = true, period = 3600, stroke = 9, accent = false, flip = false, ground = true, front = false, pass = [], stepMs, arc = false } = {}) {
     this.setPath(poses, pass);
     this.animate = animate;
-    this.step = period / 2;
+    this.baseStep = period / 2;
+    this.step = stepMs || this.baseStep;
+    this.arc = arc;
     this.offset = Math.random() * period * 2;
     const svg = document.createElementNS(SVGNS, "svg");
     svg.setAttribute("viewBox", "0 0 240 200");
@@ -90,8 +111,10 @@ class Figure {
     });
     this.totalSegs = start;
   }
-  setPoses(poses, front, pass) {
+  setPoses(poses, { front, pass, stepMs, arc } = {}) {
     this.setPath(poses, pass);
+    this.step = stepMs || this.baseStep;
+    this.arc = !!arc;
     const far = front ? 1 : 0.35;
     this.armB.setAttribute("opacity", far);
     this.legB.setAttribute("opacity", far);
@@ -119,7 +142,7 @@ class Figure {
     // One smooth ease across the whole move, so pass-through poses don't cause a pause.
     const u = ease((local - HOLD) / (mv.segs - HOLD)) * mv.segs;
     const s = Math.min(Math.floor(u), mv.segs - 1);
-    this.draw(lerpPose(P[mv.path[s]], P[mv.path[s + 1]], u - s));
+    this.draw(lerpPose(P[mv.path[s]], P[mv.path[s + 1]], u - s, this.arc));
   }
 }
 
@@ -240,7 +263,7 @@ function renderHome() {
     <button class="btn btn-ghost new-flow" id="new">+ New flow</button>
   `);
 
-  mountFigure(document.getElementById("hero"), exById["body-waves"].poses, { stroke: 11, ground: false, period: 2400, pass: exById["body-waves"].pass });
+  mountFigure(document.getElementById("hero"), exById["body-waves"].poses, { stroke: 11, ground: false, period: 2400, ...exOpts(exById["body-waves"]) });
   document.getElementById("new").onclick = () => renderBuilder(null);
   $app.querySelectorAll("[data-edit]").forEach((b) => b.onclick = (e) => { e.stopPropagation(); renderBuilder(b.dataset.edit); });
   $app.querySelectorAll("[data-play]").forEach((c) => c.onclick = () => {
@@ -374,7 +397,7 @@ function openLibrary() {
       <div class="lib">${cards}</div>
       <button class="btn btn-ink" id="done-add" style="width:100%;margin-top:16px">Done</button>
     </div>`;
-  $sheet.querySelectorAll("[data-libfig]").forEach((el) => mountFigure(el, exById[el.dataset.libfig].poses, { stroke: 10, front: exById[el.dataset.libfig].front, pass: exById[el.dataset.libfig].pass }));
+  $sheet.querySelectorAll("[data-libfig]").forEach((el) => mountFigure(el, exById[el.dataset.libfig].poses, { stroke: 10, ...exOpts(exById[el.dataset.libfig]) }));
   const close = () => { $sheet.innerHTML = ""; drawBuilder(); };
   document.getElementById("scrim").onclick = close;
   document.getElementById("done-add").onclick = close;
@@ -464,7 +487,7 @@ function drawPlayerShell() {
       </div>
     </div>
   `);
-  player.fig = mountFigure(document.getElementById("ringfig"), player.steps[0].ex.poses, { stroke: 9, period: 3600, front: player.steps[0].ex.front, pass: player.steps[0].ex.pass });
+  player.fig = mountFigure(document.getElementById("ringfig"), player.steps[0].ex.poses, { stroke: 9, period: 3600, ...exOpts(player.steps[0].ex) });
   document.getElementById("quit").onclick = () => { if (confirm("End this flow?")) renderHome(); };
   document.getElementById("pp").onclick = togglePause;
   document.getElementById("next").onclick = () => goStep(player.i + 1);
@@ -484,7 +507,7 @@ function enterStep() {
   document.getElementById("side").innerHTML = s.side ? `<span class="side-pill">${s.side.toUpperCase()}</span>` : "";
   document.getElementById("cue").textContent = s.type === "work" ? s.ex.cue : s.type === "switch" ? "Swap to the other side." : s.ex.cue;
   document.getElementById("counter").textContent = `${s.idx + 1}/${player.flow.items.length}`;
-  player.fig.setPoses(s.ex.poses, s.ex.front, s.ex.pass);
+  player.fig.setPoses(s.ex.poses, exOpts(s.ex));
   // Mirror the figure for the right side so it reads as "the other leg"
   player.fig.svg.firstChild.setAttribute("transform", s.side === "Right" ? "translate(240 0) scale(-1 1)" : "");
   // Figure animates during work; holds start pose while resting/getting ready
