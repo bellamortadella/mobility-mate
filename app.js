@@ -405,12 +405,13 @@ function openLibrary() {
       <div class="lib-fig" data-libfig="${ex.id}"></div>
       <div class="name">${esc(ex.name)}</div>
       ${ex.sided ? `<span class="tag">L + R</span>` : ""}
+      <span class="count"></span>
     </button>`).join("");
   $sheet.innerHTML = `
     <div class="scrim" id="scrim"></div>
     <div class="sheet">
       <div class="grab"></div>
-      <h2>Add a move</h2>
+      <div class="sheet-head"><h2>Add a move</h2><span class="sel-total" id="sel-total"></span></div>
       <div class="lib">${cards}</div>
       <button class="btn btn-ink" id="done-add" style="width:100%;margin-top:16px">Done</button>
     </div>`;
@@ -418,11 +419,27 @@ function openLibrary() {
   const close = () => { $sheet.innerHTML = ""; drawBuilder(); };
   document.getElementById("scrim").onclick = close;
   document.getElementById("done-add").onclick = close;
+  // Orange outline + count on moves already in the flow, and a running total.
+  const refresh = () => {
+    const counts = {};
+    for (const it of draft.items) counts[it.exId] = (counts[it.exId] || 0) + 1;
+    $sheet.querySelectorAll("[data-add]").forEach((b) => {
+      const n = counts[b.dataset.add] || 0;
+      b.classList.toggle("selected", n > 0);
+      b.querySelector(".count").textContent = n > 1 ? `×${n}` : n ? "✓" : "";
+    });
+    const total = draft.items.length;
+    document.getElementById("sel-total").textContent = total ? `${total} selected` : "";
+    document.getElementById("done-add").textContent = total ? `Done · ${total} ${total === 1 ? "move" : "moves"}` : "Done";
+  };
   $sheet.querySelectorAll("[data-add]").forEach((b) => b.onclick = () => {
     draft.items.push({ exId: b.dataset.add, dur: DEFAULT_DUR });
-    b.classList.remove("added"); void b.offsetWidth; b.classList.add("added");
+    refresh();
+    const c = b.querySelector(".count");
+    c.classList.remove("bump"); void c.offsetWidth; c.classList.add("bump");
     vibrate(10);
   });
+  refresh();
 }
 
 /* ================= Player ================= */
