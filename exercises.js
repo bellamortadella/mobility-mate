@@ -182,6 +182,40 @@ const WGS_DOWN = {
 };
 const WGS_REACH = { ...WGS_DOWN, head: [166, 96], neck: [152, 108], eA: [154, 82], hA: [156, 54] };
 
+// ---- Batch 3 poses ----
+const ROCK_MID = {
+  head: [120, 80], neck: [120, 100], mid: [120, 126], hip: [120, 152],
+  eA: [142, 120], hA: [122, 112], eB: [98, 120], hB: [118, 112],
+  kA: [160, 140], fA: [150, 182], kB: [80, 140], fB: [90, 182],
+};
+const ROCK_SIDE = {
+  head: [134, 82], neck: [133, 102], mid: [134, 128], hip: [136, 154],
+  eA: [156, 122], hA: [136, 114], eB: [112, 122], hB: [132, 114],
+  kA: [168, 144], fA: [150, 182], kB: [100, 154], fB: [90, 182],
+};
+
+// Deer pose, front view: front leg bent across in front, back leg bent out behind; hands behind head.
+const DEER_TALL = {
+  head: [120, 98], neck: [120, 118], mid: [120, 146], hip: [120, 172],
+  eA: [146, 100], hA: [127, 94], eB: [94, 100], hB: [113, 94],
+  kA: [162, 170], fA: [128, 182], kB: [84, 176], fB: [52, 166],
+};
+const DEER_FOLD = { ...DEER_TALL,
+  head: [148, 128], neck: [140, 140], mid: [130, 157],
+  eA: [166, 130], hA: [154, 120], eB: [128, 118], hB: [142, 116] };
+
+const LONG_SIT = {
+  head: [104, 104], neck: [98, 124], mid: [100, 150], hip: [104, 172],
+  eA: [92, 152], hA: [88, 182], eB: [96, 152], hB: [92, 182],
+  kA: [146, 174], fA: [190, 178], kB: [142, 174], fB: [186, 178],
+};
+const BENT_SIT = { ...LONG_SIT, hip: [104, 176], kA: [140, 144], fA: [166, 182], kB: [136, 144], fB: [162, 182] };
+const TABLETOP = {
+  head: [76, 112], neck: [92, 124], mid: [116, 128], hip: [140, 132],
+  eA: [88, 154], hA: [86, 182], eB: [92, 154], hB: [90, 182],
+  kA: [172, 130], fA: [176, 182], kB: [168, 130], fB: [172, 182],
+};
+
 const EXERCISES = [
   { id: "body-bounces", name: "Body Bounces", front: true,
     cue: "Stay loose. Small, springy hops.",
@@ -241,6 +275,15 @@ const EXERCISES = [
   { id: "worlds-greatest-stretch", name: "World's Greatest Stretch", front: false,
     cue: "Deep lunge, hand inside the foot, rotate and reach to the sky.",
     poses: [WGS_DOWN, WGS_REACH] },
+  { id: "deep-squat-rocks", name: "Deep Squat Rocks", front: true,
+    cue: "Prayer hands, elbows in. Rock your weight side to side.",
+    poses: [ROCK_SIDE, ROCK_MID, mirror(ROCK_SIDE), ROCK_MID], pass: [1, 3] },
+  { id: "active-deer-pose", name: "Active Deer Pose", front: true, sided: true,
+    cue: "Hands behind head. Sit tall, then fold over the front leg.",
+    poses: [DEER_TALL, DEER_FOLD] },
+  { id: "tabletop-core", name: "Tabletop + Core", front: false,
+    cue: "Long sit, bend the knees, drive the hips up. Flow back down.",
+    poses: [LONG_SIT, BENT_SIT, TABLETOP, BENT_SIT], pass: [1, 3] },
 ];
 
 // Pose used on the "done" screen.
