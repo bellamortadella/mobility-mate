@@ -335,7 +335,7 @@ const NECK_U = [[103, 82], [108, 86], [120, 88], [132, 86], [137, 82], [132, 86]
 const EXERCISES = [
   { id: "body-bounces", name: "Body Bounces", front: true,
     cue: "Stay loose. Small, springy hops.",
-    poses: [BOUNCE_DOWN, shift(FRONT, 0, -12)] },
+    poses: [BOUNCE_DOWN, shift(FRONT, 0, -12)], stepMs: 900 },
   { id: "neck-circles", name: "Neck Circles", front: true,
     cue: "Slow circles. Let the head be heavy.",
     poses: [{ ...FRONT, head: [131, 34] }, { ...FRONT, head: [120, 38] }, { ...FRONT, head: [109, 34] }, { ...FRONT, head: [120, 25] }] },
