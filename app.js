@@ -263,7 +263,7 @@ function renderHome() {
     <button class="btn btn-ghost new-flow" id="new">+ New flow</button>
   `);
 
-  mountFigure(document.getElementById("hero"), exById["body-waves"].poses, { stroke: 11, ground: false, period: 2400, ...exOpts(exById["body-waves"]) });
+  mountFigure(document.getElementById("hero"), exById["crab-pose"].poses, { stroke: 11, ground: false, period: 2400, ...exOpts(exById["crab-pose"]) });
   document.getElementById("new").onclick = () => renderBuilder(null);
   $app.querySelectorAll("[data-edit]").forEach((b) => b.onclick = (e) => { e.stopPropagation(); renderBuilder(b.dataset.edit); });
   $app.querySelectorAll("[data-play]").forEach((c) => c.onclick = () => {

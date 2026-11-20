@@ -216,6 +216,57 @@ const TABLETOP = {
   kA: [172, 130], fA: [176, 182], kB: [168, 130], fB: [172, 182],
 };
 
+// ---- Around the worlds: wide stance, hands behind head, torso circles ----
+const WIDE_LEGS = { kA: [146, 144], fA: [164, 182], kB: [94, 144], fB: [76, 182] };
+const ATW_FOLD = { head: [120, 134], neck: [120, 120], mid: [120, 108], hip: [120, 104],
+  eA: [148, 116], hA: [128, 132], eB: [92, 116], hB: [112, 132], ...WIDE_LEGS };
+const ATW_LOW = { head: [162, 124], neck: [150, 112], mid: [134, 104], hip: [116, 104],
+  eA: [176, 122], hA: [156, 128], eB: [148, 96], hB: [166, 116], ...WIDE_LEGS };
+const ATW_SIDE = { head: [154, 46], neck: [142, 58], mid: [126, 78], hip: [114, 104],
+  eA: [166, 64], hA: [156, 50], eB: [128, 32], hB: [146, 38], ...WIDE_LEGS };
+const ATW_UP = { head: [119, 28], neck: [120, 48], mid: [122, 76], hip: [120, 104],
+  eA: [148, 34], hA: [128, 22], eB: [92, 34], hB: [112, 22], ...WIDE_LEGS };
+
+// ---- Batch 4 poses ----
+// Golf arms: wide stance; one arm long and angled up to the side, the other bent with hand at the shoulder.
+const GOLF_ARMS = {
+  head: [124, 32], neck: [121, 52], mid: [120, 80], hip: [118, 108],
+  eA: [150, 44], hA: [180, 34], eB: [96, 60], hB: [110, 48],
+  kA: [140, 146], fA: [158, 182], kB: [100, 146], fB: [82, 182],
+};
+// Swinging low through the middle between sides.
+const GOLF_MID = {
+  head: [120, 32], neck: [120, 52], mid: [120, 80], hip: [120, 108],
+  eA: [132, 80], hA: [126, 106], eB: [108, 80], hB: [114, 106],
+  kA: [140, 146], fA: [158, 182], kB: [100, 146], fB: [82, 182],
+};
+
+// March slaps, side view: knee up, opposite hand slaps it.
+const MARCH = { ...STAND,
+  eA: [112, 78], hA: [104, 100], eB: [134, 76], hB: [144, 98],
+  kA: [146, 100], fA: [150, 138] };
+
+// Ballet squat (plié): wide, turned-out stance. Arms rounded out to the sides
+// in the squat, reaching overhead as you rise.
+const PLIE_UP = { ...FRONT,
+  eA: [131, 28], hA: [140, 6], eB: [109, 28], hB: [100, 6],
+  kA: [138, 144], fA: [152, 182], kB: [102, 144], fB: [88, 182] };
+const PLIE_DOWN = { ...shift(FRONT, 0, 28),
+  eA: [150, 94], hA: [174, 102], eB: [90, 94], hB: [66, 102],
+  kA: [162, 150], fA: [152, 182], kB: [78, 150], fB: [88, 182] };
+
+// Trunk twists: wide athletic stance, elbows out at chest height, hands in front of the chest.
+const TWIST_LEGS = { hip: [120, 112], kA: [146, 150], fA: [156, 182], kB: [94, 150], fB: [84, 182] };
+const TWIST_MID = { head: [120, 38], neck: [120, 58], mid: [120, 85], ...TWIST_LEGS,
+  eA: [150, 82], hA: [128, 72], eB: [90, 82], hB: [112, 72] };
+const TWIST_TURN = { head: [125, 38], neck: [121, 58], mid: [120, 85], ...TWIST_LEGS,
+  eA: [148, 56], hA: [138, 44], eB: [112, 76], hB: [140, 66] };
+
+// Standing side bend: top arm reaches over, bottom hand slides down the leg.
+const SIDE_BEND = { ...FRONT,
+  head: [150, 44], neck: [140, 58], mid: [127, 82], hip: [117, 106],
+  eA: [150, 84], hA: [151, 110], eB: [128, 32], hB: [154, 16] };
+
 const EXERCISES = [
   { id: "body-bounces", name: "Body Bounces", front: true,
     cue: "Stay loose. Small, springy hops.",
@@ -284,6 +335,27 @@ const EXERCISES = [
   { id: "tabletop-core", name: "Tabletop + Core", front: false,
     cue: "Long sit, bend the knees, drive the hips up. Flow back down.",
     poses: [LONG_SIT, BENT_SIT, TABLETOP, BENT_SIT], pass: [1, 3] },
+  { id: "around-the-worlds", name: "Around the Worlds", front: true,
+    cue: "Wide stance, hands behind head. Circle the torso one way, then the other.",
+    // From upright: circle down through the fold and back up, pause at the top, then circle the other way.
+    poses: [ATW_UP, ATW_SIDE, ATW_LOW, ATW_FOLD, mirror(ATW_LOW), mirror(ATW_SIDE),
+            ATW_UP, mirror(ATW_SIDE), mirror(ATW_LOW), ATW_FOLD, ATW_LOW, ATW_SIDE],
+    pass: [1, 2, 3, 4, 5, 7, 8, 9, 10, 11], stepMs: 600 },
+  { id: "golf-arms", name: "Golf Arms", front: true,
+    cue: "Wide stance. One arm long and high, swing low through the middle, swap sides.",
+    poses: [GOLF_ARMS, GOLF_MID, mirror(GOLF_ARMS), GOLF_MID], pass: [1, 3], arcArms: true },
+  { id: "march-slaps", name: "March Slaps", front: false,
+    cue: "March tall. Slap each knee with the opposite hand.",
+    poses: [MARCH, STAND, swapAB(MARCH), STAND], pass: [1, 3], stepMs: 450 },
+  { id: "ballet-squats", name: "Ballet Squats", front: true,
+    cue: "Toes out, knees wide. Sink with arms out, rise and reach overhead.",
+    poses: [PLIE_UP, PLIE_DOWN], arcArms: true },
+  { id: "trunk-rotations", name: "Trunk Rotations", front: true,
+    cue: "Knees soft, elbows up. Twist side to side through the middle.",
+    poses: [TWIST_TURN, TWIST_MID, mirror(TWIST_TURN), TWIST_MID], pass: [1, 3], stepMs: 700 },
+  { id: "side-bends", name: "Side Bends", front: true,
+    cue: "Reach up and over. Slide the other hand down your leg.",
+    poses: [SIDE_BEND, FRONT, mirror(SIDE_BEND), FRONT], pass: [1, 3] },
 ];
 
 // Pose used on the "done" screen.
