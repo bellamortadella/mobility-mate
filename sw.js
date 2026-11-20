@@ -1,7 +1,7 @@
 // Offline support. Network first, so new versions show up right away;
 // falls back to the last cached copy when there's no connection.
-const CACHE = "mobilitymate-v3";
-const SHELL = ["./", "index.html", "styles.css", "exercises.js", "app.js", "manifest.webmanifest?v=2", "icons/icon-192.png?v=2"];
+const CACHE = "mobilitymate-v4";
+const SHELL = ["./", "index.html", "styles.css", "exercises.js", "app.js", "manifest.webmanifest?v=4", "icons/icon-192.png?v=4"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
