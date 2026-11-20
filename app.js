@@ -283,6 +283,31 @@ function tapSound(pitch = 1) {
     th.start(t); th.stop(t + 0.03);
   } catch (e) { /* no audio, no problem */ }
 }
+// Player cues: clean sine beeps, each with a quick fade in/out so they don't pop.
+function tone(freq, start, dur, gain = 0.3) {
+  const o = actx.createOscillator(), g = actx.createGain(), t = actx.currentTime + start;
+  o.type = "sine"; o.frequency.value = freq;
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(gain, t + 0.008);
+  g.gain.setValueAtTime(gain, t + dur - 0.03);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g).connect(actx.destination);
+  o.start(t); o.stop(t + dur + 0.02);
+}
+const CUES = {
+  count: () => tone(880, 0, 0.09),                                   // 3, 2, 1
+  work: () => { tone(880, 0, 0.11); tone(1320, 0.12, 0.22, 0.34); }, // new exercise: rising
+  rest: () => { tone(988, 0, 0.11, 0.24); tone(740, 0.12, 0.2, 0.22); }, // rest / switch: falling
+  done: () => { tone(880, 0, 0.12); tone(1109, 0.13, 0.12); tone(1320, 0.26, 0.32, 0.34); },
+};
+function cue(name) {
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    if (actx.state === "suspended") actx.resume();
+    CUES[name]();
+  } catch (e) { /* no audio, no problem */ }
+}
+
 // Every button clicks on press. Big action buttons get a slightly deeper click.
 document.addEventListener("pointerdown", (e) => {
   const b = e.target.closest("button");
@@ -637,7 +662,8 @@ function enterStep() {
   // Figure animates during work; holds start pose while resting/getting ready
   if (s.type === "work") liveFigures.add(player.fig); else liveFigures.delete(player.fig);
   if (s.type !== "work") player.fig.draw(s.ex.poses[0]);
-  if (s.type === "work") vibrate([40, 60, 40]); else vibrate(30);
+  if (s.type === "work") { vibrate([40, 60, 40]); cue("work"); }
+  else { vibrate(30); if (s.type !== "ready") cue("rest"); }
 }
 
 function goStep(i) {
@@ -672,7 +698,10 @@ function playerLoop(now) {
   if (shown !== player.lastShown) {
     const t = document.getElementById("time");
     t.textContent = shown;
-    if (Math.ceil(left) <= 3) { t.classList.remove("tick"); void t.offsetWidth; t.classList.add("tick"); }
+    if (Math.ceil(left) <= 3) {
+      t.classList.remove("tick"); void t.offsetWidth; t.classList.add("tick");
+      if (player.lastShown !== null && !player.paused) cue("count");
+    }
     player.lastShown = shown;
   }
   // Progress bar per exercise
@@ -700,6 +729,7 @@ function finishFlow() {
   const flow = player.flow;
   stopPlayer();
   vibrate([60, 80, 60, 80, 120]);
+  cue("done");
   const cheers = ["Nice work.", "Loose & ready.", "Look at you go.", "Smooth moves."];
   show(`
     <div class="done">
