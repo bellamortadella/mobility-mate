@@ -243,40 +243,51 @@ function flowSeconds(flow) {
 function vibrate(p) { try { navigator.vibrate && navigator.vibrate(p); } catch (e) {} }
 
 /* ================= Tap sound ================= */
-// A short synthesized "tock": a quick pitch-dropping sine for the body plus a tiny
-// filtered noise tick for the edge. No audio files. iPhone's silent switch mutes it.
-let actx = null, tickNoise = null;
+// A sharp, tactile click like a mechanical switch. No pitch sweep (that sounds like a laser):
+//   1. a few milliseconds of band-passed noise for the crisp "snap",
+//   2. a tiny fixed-pitch tick that dies in ~12ms for definition,
+//   3. a faint low thump for weight.
+// No audio files. iPhone's silent switch mutes it.
+let actx = null, snapNoise = null;
 function tapSound(pitch = 1) {
   try {
     actx = actx || new (window.AudioContext || window.webkitAudioContext)();
     if (actx.state === "suspended") actx.resume();
-    const t = actx.currentTime;
-    const o = actx.createOscillator(), g = actx.createGain();
-    o.type = "sine";
-    o.frequency.setValueAtTime(1150 * pitch, t);
-    o.frequency.exponentialRampToValueAtTime(300 * pitch, t + 0.045);
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(0.32, t + 0.003);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.075);
-    o.connect(g).connect(actx.destination);
-    o.start(t); o.stop(t + 0.09);
-    if (!tickNoise) {
-      const len = Math.floor(actx.sampleRate * 0.012);
-      tickNoise = actx.createBuffer(1, len, actx.sampleRate);
-      const d = tickNoise.getChannelData(0);
-      for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len) ** 3;
+    const t = actx.currentTime, out = actx.destination;
+    if (!snapNoise) {
+      const len = Math.floor(actx.sampleRate * 0.006);
+      snapNoise = actx.createBuffer(1, len, actx.sampleRate);
+      const d = snapNoise.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len) ** 4;
     }
-    const n = actx.createBufferSource(), hp = actx.createBiquadFilter(), ng = actx.createGain();
-    n.buffer = tickNoise; hp.type = "highpass"; hp.frequency.value = 2800; ng.gain.value = 0.18;
-    n.connect(hp).connect(ng).connect(actx.destination);
+    // 1. snap
+    const n = actx.createBufferSource(), bp = actx.createBiquadFilter(), ng = actx.createGain();
+    n.buffer = snapNoise;
+    bp.type = "bandpass"; bp.frequency.value = 3800 * pitch; bp.Q.value = 0.9;
+    ng.gain.value = 0.9;
+    n.connect(bp).connect(ng).connect(out);
     n.start(t);
+    // 2. tick
+    const o = actx.createOscillator(), og = actx.createGain();
+    o.type = "triangle"; o.frequency.value = 1800 * pitch;
+    og.gain.setValueAtTime(0.18, t);
+    og.gain.exponentialRampToValueAtTime(0.0001, t + 0.012);
+    o.connect(og).connect(out);
+    o.start(t); o.stop(t + 0.015);
+    // 3. thump
+    const th = actx.createOscillator(), tg = actx.createGain();
+    th.type = "sine"; th.frequency.value = 150 * pitch;
+    tg.gain.setValueAtTime(0.22, t);
+    tg.gain.exponentialRampToValueAtTime(0.0001, t + 0.025);
+    th.connect(tg).connect(out);
+    th.start(t); th.stop(t + 0.03);
   } catch (e) { /* no audio, no problem */ }
 }
-// Every button clicks on press. Big action buttons get a deeper tock.
+// Every button clicks on press. Big action buttons get a slightly deeper click.
 document.addEventListener("pointerdown", (e) => {
   const b = e.target.closest("button");
   if (!b || b.disabled) return;
-  tapSound(b.matches(".btn-primary, .big, .play-chip") ? 0.72 : 1);
+  tapSound(b.matches(".btn-primary, .big, .play-chip") ? 0.75 : 1);
 }, { passive: true });
 function show(html) {
   $app.innerHTML = html;
