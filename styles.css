@@ -229,13 +229,14 @@ input { font: inherit; color: inherit; }
 /* Library: group filter chips */
 .chips { display: flex; align-items: center; gap: 6px; overflow-x: auto; margin: 0 -20px 14px; padding: 0 20px 2px; scrollbar-width: none; }
 .chip-group { display: flex; gap: 6px; }
-.chip-div { flex-shrink: 0; width: 1.5px; height: 22px; background: var(--line); margin: 0 4px; }
+.chip-div { flex-shrink: 0; width: 1.5px; height: 22px; background: var(--line); margin: 0 2px; }
 .lib-empty { color: var(--muted); text-align: center; margin: 24px 0; }
 .chips::-webkit-scrollbar { display: none; }
 .chip {
-  flex-shrink: 0; height: 34px; padding: 0 14px; border-radius: 999px;
+  flex-shrink: 0; height: 34px; padding: 0 12px; border-radius: 999px;
   background: var(--card); border: 1.5px solid var(--line); font-weight: 700; font-size: 14px; color: var(--muted);
   transition: background .15s, color .15s;
 }
 .chip.on { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+.chip.alt.on { background: var(--accent); border-color: var(--accent); color: #fff; }
 .lib-card[hidden] { display: none; }

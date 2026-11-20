@@ -412,12 +412,13 @@ function drawBuilder() {
 
 // Library filters: two groups that stack. Within a group, picks widen (Upper or Lower);
 // across groups they narrow (Upper AND Floor). Nothing picked in a group = no limit.
-const LIB_FILTERS = [[["u", "Upper"], ["l", "Lower"]], [["f", "Floor"], ["s", "Standing"]]];
+// The second chip in each group (Lower, Floor) turns orange when on, for contrast.
+const LIB_FILTERS = [[["u", "Upper"], ["l", "Lower"]], [["s", "Standing"], ["f", "Floor"]]];
 const libPicked = new Set();
 
 function openLibrary() {
-  const chips = LIB_FILTERS.map((grp) => `<div class="chip-group">${grp.map(([k, label]) =>
-    `<button class="chip" data-group="${k}">${label}</button>`).join("")}</div>`).join(`<span class="chip-div"></span>`);
+  const chips = LIB_FILTERS.map((grp) => `<div class="chip-group">${grp.map(([k, label], j) =>
+    `<button class="chip${j ? " alt" : ""}" data-group="${k}">${label}</button>`).join("")}</div>`).join(`<span class="chip-div"></span>`);
   const cards = EXERCISES.map((ex) => `
     <button class="lib-card" data-add="${ex.id}" data-groups="${ex.groups.join(" ")}">
       <div class="lib-fig" data-libfig="${ex.id}"></div>
