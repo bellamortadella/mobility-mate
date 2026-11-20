@@ -301,8 +301,10 @@ function renderBuilder(flowId) {
 }
 
 // A two-option pill toggle (30s / 60s). `attr` tags each button; `value` is the active one.
+// Two-option toggle with a sliding thumb (black on 30s, orange on 60s).
 function segToggle(attr, value) {
-  return `<div class="seg">${DURATIONS.map((d) =>
+  const i = DURATIONS.indexOf(value);
+  return `<div class="seg" data-pos="${i}" data-val="${value ?? ""}"><span class="knob"></span>${DURATIONS.map((d) =>
     `<button ${attr} data-v="${d}" class="${d === value ? "on" : ""}" aria-pressed="${d === value}">${d}s</button>`).join("")}</div>`;
 }
 
@@ -368,13 +370,32 @@ function drawBuilder() {
   document.getElementById("rest-minus").onclick = () => { draft.rest = Math.max(0, draft.rest - 5); drawBuilder(); };
   document.getElementById("rest-plus").onclick = () => { draft.rest = Math.min(60, draft.rest + 5); drawBuilder(); };
   document.getElementById("add").onclick = openLibrary;
+  // Slide the thumb in place first, then redraw once the glide has finished.
+  const slide = (seg, v) => {
+    seg.dataset.pos = DURATIONS.indexOf(v);
+    seg.dataset.val = v ?? "";
+    seg.querySelectorAll("button").forEach((x) => x.classList.toggle("on", +x.dataset.v === v));
+  };
+  // Update the "set all" toggle and the total in place (a full redraw would replay the fade-in).
+  const later = () => {
+    const first = draft.items[0]?.dur;
+    const same = draft.items.every((it) => it.dur === first);
+    const all = $app.querySelector("[data-all]")?.parentElement;
+    if (all) slide(all, same ? first : null);
+    const total = $app.querySelector(".builder-foot .total");
+    if (total && draft.items.length) total.textContent = `Total ≈ ${fmtLong(flowSeconds(draft))}`;
+  };
   $app.querySelectorAll("[data-dur]").forEach((b) => b.onclick = () => {
-    draft.items[+b.dataset.dur].dur = +b.dataset.v;
-    drawBuilder();
+    const v = +b.dataset.v;
+    draft.items[+b.dataset.dur].dur = v;
+    slide(b.parentElement, v);
+    later();
   });
   $app.querySelectorAll("[data-all]").forEach((b) => b.onclick = () => {
-    draft.items.forEach((it) => (it.dur = +b.dataset.v));
-    drawBuilder();
+    const v = +b.dataset.v;
+    draft.items.forEach((it) => (it.dur = v));
+    $app.querySelectorAll(".seg").forEach((seg) => slide(seg, v));
+    later();
   });
   const swap = (i, j) => { [draft.items[i], draft.items[j]] = [draft.items[j], draft.items[i]]; drawBuilder(); };
   $app.querySelectorAll("[data-up]").forEach((b) => b.onclick = () => swap(+b.dataset.up, +b.dataset.up - 1));
@@ -399,11 +420,14 @@ function drawBuilder() {
   };
 }
 
-const LIB_GROUPS = [["all", "All"], ["u", "Upper body"], ["l", "Lower body"], ["f", "Floor"], ["s", "Standing"]];
-let libGroup = "all";
+// Library filters: two groups that stack. Within a group, picks widen (Upper or Lower);
+// across groups they narrow (Upper AND Floor). Nothing picked in a group = no limit.
+const LIB_FILTERS = [[["u", "Upper"], ["l", "Lower"]], [["f", "Floor"], ["s", "Standing"]]];
+const libPicked = new Set();
 
 function openLibrary() {
-  const chips = LIB_GROUPS.map(([k, label]) => `<button class="chip" data-group="${k}">${label}</button>`).join("");
+  const chips = LIB_FILTERS.map((grp) => `<div class="chip-group">${grp.map(([k, label]) =>
+    `<button class="chip" data-group="${k}">${label}</button>`).join("")}</div>`).join(`<span class="chip-div"></span>`);
   const cards = EXERCISES.map((ex) => `
     <button class="lib-card" data-add="${ex.id}" data-groups="${ex.groups.join(" ")}">
       <div class="lib-fig" data-libfig="${ex.id}"></div>
@@ -417,6 +441,7 @@ function openLibrary() {
       <div class="grab"></div>
       <div class="sheet-head"><h2>Add a move</h2><span class="sel-total" id="sel-total"></span></div>
       <div class="chips">${chips}</div>
+      <p class="lib-empty" id="lib-empty" hidden>No moves match these filters.</p>
       <div class="lib">${cards}</div>
       <button class="btn btn-ink" id="done-add" style="width:100%;margin-top:16px">Done</button>
     </div>`;
@@ -437,12 +462,23 @@ function openLibrary() {
   };
   // Group filter chips.
   const filter = () => {
-    $sheet.querySelectorAll("[data-group]").forEach((c) => c.classList.toggle("on", c.dataset.group === libGroup));
+    $sheet.querySelectorAll("[data-group]").forEach((c) => c.classList.toggle("on", libPicked.has(c.dataset.group)));
+    let shown = 0;
     $sheet.querySelectorAll("[data-add]").forEach((b) => {
-      b.hidden = libGroup !== "all" && !b.dataset.groups.split(" ").includes(libGroup);
+      const g = b.dataset.groups.split(" ");
+      b.hidden = !LIB_FILTERS.every((grp) => {
+        const picks = grp.map(([k]) => k).filter((k) => libPicked.has(k));
+        return !picks.length || picks.some((k) => g.includes(k));
+      });
+      if (!b.hidden) shown++;
     });
+    document.getElementById("lib-empty").hidden = shown > 0;
   };
-  $sheet.querySelectorAll("[data-group]").forEach((c) => c.onclick = () => { libGroup = c.dataset.group; filter(); });
+  $sheet.querySelectorAll("[data-group]").forEach((c) => c.onclick = () => {
+    const k = c.dataset.group;
+    libPicked.has(k) ? libPicked.delete(k) : libPicked.add(k);
+    filter();
+  });
   filter();
   // Tap to pick, tap again to unpick.
   $sheet.querySelectorAll("[data-add]").forEach((b) => b.onclick = () => {

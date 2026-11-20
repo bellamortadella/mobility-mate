@@ -200,9 +200,16 @@ input { font: inherit; color: inherit; }
 @keyframes screenIn { from { opacity: 0; transform: translateY(8px); } }
 
 /* 30s / 60s toggle */
-.seg { display: flex; background: var(--card); border: 1.5px solid var(--line); border-radius: 999px; padding: 3px; gap: 2px; }
-.seg button { height: 30px; min-width: 46px; padding: 0 10px; border-radius: 999px; font-weight: 700; font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; transition: background .15s, color .15s; }
-.seg button.on { background: var(--ink); color: var(--bg); }
+.seg { position: relative; display: grid; grid-template-columns: 1fr 1fr; background: var(--card); border: 1.5px solid var(--line); border-radius: 999px; padding: 3px; }
+.seg button { position: relative; z-index: 1; height: 30px; min-width: 50px; padding: 0 10px; border-radius: 999px; font-weight: 700; font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; transition: color .25s; }
+.seg button.on { color: #fff; }
+.seg .knob {
+  position: absolute; top: 3px; bottom: 3px; left: 3px; width: calc(50% - 3px); border-radius: 999px;
+  background: var(--ink); transition: transform .28s cubic-bezier(.3, .9, .3, 1.15), background .28s, opacity .2s;
+}
+.seg[data-pos="1"] .knob { transform: translateX(100%); }
+.seg[data-pos="-1"] .knob { opacity: 0; }
+.seg[data-val="60"] .knob { background: var(--accent); }
 
 /* Library: selected moves */
 .sheet-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
@@ -220,7 +227,10 @@ input { font: inherit; color: inherit; }
 @keyframes bump { 0% { transform: scale(1.35); } 100% { transform: scale(1); } }
 
 /* Library: group filter chips */
-.chips { display: flex; gap: 6px; overflow-x: auto; margin: 0 -20px 14px; padding: 0 20px 2px; scrollbar-width: none; }
+.chips { display: flex; align-items: center; gap: 6px; overflow-x: auto; margin: 0 -20px 14px; padding: 0 20px 2px; scrollbar-width: none; }
+.chip-group { display: flex; gap: 6px; }
+.chip-div { flex-shrink: 0; width: 1.5px; height: 22px; background: var(--line); margin: 0 4px; }
+.lib-empty { color: var(--muted); text-align: center; margin: 24px 0; }
 .chips::-webkit-scrollbar { display: none; }
 .chip {
   flex-shrink: 0; height: 34px; padding: 0 14px; border-radius: 999px;
