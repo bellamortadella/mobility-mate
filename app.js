@@ -399,9 +399,13 @@ function drawBuilder() {
   };
 }
 
+const LIB_GROUPS = [["all", "All"], ["u", "Upper body"], ["l", "Lower body"], ["f", "Floor"], ["s", "Standing"]];
+let libGroup = "all";
+
 function openLibrary() {
+  const chips = LIB_GROUPS.map(([k, label]) => `<button class="chip" data-group="${k}">${label}</button>`).join("");
   const cards = EXERCISES.map((ex) => `
-    <button class="lib-card" data-add="${ex.id}">
+    <button class="lib-card" data-add="${ex.id}" data-groups="${ex.groups.join(" ")}">
       <div class="lib-fig" data-libfig="${ex.id}"></div>
       <div class="name">${esc(ex.name)}</div>
       ${ex.sided ? `<span class="tag">L + R</span>` : ""}
@@ -412,6 +416,7 @@ function openLibrary() {
     <div class="sheet">
       <div class="grab"></div>
       <div class="sheet-head"><h2>Add a move</h2><span class="sel-total" id="sel-total"></span></div>
+      <div class="chips">${chips}</div>
       <div class="lib">${cards}</div>
       <button class="btn btn-ink" id="done-add" style="width:100%;margin-top:16px">Done</button>
     </div>`;
@@ -430,6 +435,15 @@ function openLibrary() {
     document.getElementById("sel-total").textContent = total ? `${total} selected` : "";
     document.getElementById("done-add").textContent = total ? `Done · ${total} ${total === 1 ? "move" : "moves"}` : "Done";
   };
+  // Group filter chips.
+  const filter = () => {
+    $sheet.querySelectorAll("[data-group]").forEach((c) => c.classList.toggle("on", c.dataset.group === libGroup));
+    $sheet.querySelectorAll("[data-add]").forEach((b) => {
+      b.hidden = libGroup !== "all" && !b.dataset.groups.split(" ").includes(libGroup);
+    });
+  };
+  $sheet.querySelectorAll("[data-group]").forEach((c) => c.onclick = () => { libGroup = c.dataset.group; filter(); });
+  filter();
   // Tap to pick, tap again to unpick.
   $sheet.querySelectorAll("[data-add]").forEach((b) => b.onclick = () => {
     const id = b.dataset.add;

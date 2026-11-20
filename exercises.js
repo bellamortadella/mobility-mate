@@ -457,6 +457,22 @@ const LOGO = [
     kA: [157, 180], fA: [202, 182], kB: [151, 180], fB: [196, 182] },
 ];
 
+// Library groups. u = upper body, l = lower body, f = floor, s = standing.
+// A move can be in several groups (couch moves are neither floor nor standing).
+const GROUP_TAGS = {
+  "body-bounces": "s l", "neck-circles": "s u", "body-waves": "s u", "vertical-arm-swings": "s u",
+  "dead-arm-swings": "s u", "horse-stance": "s l", "down-up-dogs": "f u l", "deep-squat-reach": "s l u",
+  "deep-squat-knee-taps": "s l", "straddle": "f l", "ninety-ninety": "f l", "crab-pose": "f u l",
+  "cossack": "s l", "jump-twists": "s l u", "arm-circles": "s u", "aura-farmers": "s u",
+  "reverse-lunge-side-bend": "s l u", "heel-raised-squats": "s l", "worlds-greatest-stretch": "f l u",
+  "deep-squat-rocks": "s l", "active-deer-pose": "f l", "tabletop-core": "f l u",
+  "around-the-worlds": "s u", "golf-arms": "s u", "march-slaps": "s l", "ballet-squats": "s l",
+  "trunk-rotations": "s u", "side-bends": "s u", "seated-fold-reach": "u l", "seated-cat-cow": "u",
+  "couch-arm-side-bend": "u", "hip-switches": "f l", "shoulder-floor-taps": "f u", "angel-wings": "f u",
+  "happy-baby": "f l", "neck-rolls": "f u",
+};
+EXERCISES.forEach((ex) => { ex.groups = (GROUP_TAGS[ex.id] || "").split(" ").filter(Boolean); });
+
 // Pose used on the "done" screen.
 const CELEBRATE = [
   { ...STAND, eA: [142, 44], hA: [162, 26], eB: [98, 44], hB: [78, 26] },
