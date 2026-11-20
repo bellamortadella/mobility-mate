@@ -241,6 +241,43 @@ function flowSeconds(flow) {
   return t;
 }
 function vibrate(p) { try { navigator.vibrate && navigator.vibrate(p); } catch (e) {} }
+
+/* ================= Tap sound ================= */
+// A short synthesized "tock": a quick pitch-dropping sine for the body plus a tiny
+// filtered noise tick for the edge. No audio files. iPhone's silent switch mutes it.
+let actx = null, tickNoise = null;
+function tapSound(pitch = 1) {
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    if (actx.state === "suspended") actx.resume();
+    const t = actx.currentTime;
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = "sine";
+    o.frequency.setValueAtTime(1150 * pitch, t);
+    o.frequency.exponentialRampToValueAtTime(300 * pitch, t + 0.045);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.32, t + 0.003);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.075);
+    o.connect(g).connect(actx.destination);
+    o.start(t); o.stop(t + 0.09);
+    if (!tickNoise) {
+      const len = Math.floor(actx.sampleRate * 0.012);
+      tickNoise = actx.createBuffer(1, len, actx.sampleRate);
+      const d = tickNoise.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len) ** 3;
+    }
+    const n = actx.createBufferSource(), hp = actx.createBiquadFilter(), ng = actx.createGain();
+    n.buffer = tickNoise; hp.type = "highpass"; hp.frequency.value = 2800; ng.gain.value = 0.18;
+    n.connect(hp).connect(ng).connect(actx.destination);
+    n.start(t);
+  } catch (e) { /* no audio, no problem */ }
+}
+// Every button clicks on press. Big action buttons get a deeper tock.
+document.addEventListener("pointerdown", (e) => {
+  const b = e.target.closest("button");
+  if (!b || b.disabled) return;
+  tapSound(b.matches(".btn-primary, .big, .play-chip") ? 0.72 : 1);
+}, { passive: true });
 function show(html) {
   $app.innerHTML = html;
   $app.classList.remove("screen-in");
