@@ -51,7 +51,14 @@ function lerpPose(a, b, t, arc = false) {
   return out;
 }
 // Figure settings that come from an exercise.
-const exOpts = (ex) => ({ front: ex.front, pass: ex.pass, stepMs: ex.stepMs, arc: ex.arcArms });
+const exOpts = (ex) => ({ front: ex.front, pass: ex.pass, stepMs: ex.stepMs, arc: ex.arcArms, prop: ex.prop });
+
+// Simple furniture drawn faintly behind the figure: [x, y, width, height, corner radius].
+const PROPS = {
+  "couch-front": [[40, 96, 160, 34, 8], [40, 128, 160, 16, 4]],
+  "couch-side": [[40, 128, 72, 22, 6], [40, 70, 18, 80, 6]],
+  "couch-arm": [[10, 120, 100, 28, 6], [100, 112, 26, 60, 8]],
+};
 const ease = (x) => (1 - Math.cos(Math.PI * x)) / 2;
 const HOLD = 0.3; // share of each step spent holding the pose before moving on
 
@@ -59,7 +66,7 @@ class Figure {
   // `period` = time for one full cycle of a 2-pose move; longer sequences get the same time per step.
   // `pass` = indexes of poses the figure flows through without pausing.
   // `stepMs` = fixed time per step (for fast moves like arm circles); `arc` = swing arms by angle.
-  constructor(poses, { animate = true, period = 3600, stroke = 9, accent = false, flip = false, ground = true, front = false, pass = [], stepMs, arc = false } = {}) {
+  constructor(poses, { animate = true, period = 3600, stroke = 9, accent = false, flip = false, ground = true, front = false, pass = [], stepMs, arc = false, prop } = {}) {
     this.setPath(poses, pass);
     this.animate = animate;
     this.baseStep = period / 2;
@@ -80,6 +87,8 @@ class Figure {
       return el;
     };
     const line = { fill: "none", stroke: ink, "stroke-width": stroke, "stroke-linecap": "round", "stroke-linejoin": "round" };
+    this.propG = mk("g", { fill: "var(--line)" });
+    this.setProp(prop);
     if (ground) mk("line", { x1: 30, x2: 210, y1: 188, y2: 188, stroke: "var(--line)", "stroke-width": 4, "stroke-linecap": "round" });
     const far = front ? 1 : 0.35;
     this.armB = mk("path", { ...line, opacity: far });
@@ -111,8 +120,16 @@ class Figure {
     });
     this.totalSegs = start;
   }
-  setPoses(poses, { front, pass, stepMs, arc } = {}) {
+  setProp(name) {
+    this.propG.replaceChildren(...(PROPS[name] || []).map(([x, y, width, height, rx]) => {
+      const r = document.createElementNS(SVGNS, "rect");
+      for (const [k, v] of Object.entries({ x, y, width, height, rx })) r.setAttribute(k, v);
+      return r;
+    }));
+  }
+  setPoses(poses, { front, pass, stepMs, arc, prop } = {}) {
     this.setPath(poses, pass);
+    this.setProp(prop);
     this.step = stepMs || this.baseStep;
     this.arc = !!arc;
     const far = front ? 1 : 0.35;
@@ -340,7 +357,7 @@ function drawBuilder() {
 
   $app.querySelectorAll("[data-thumb]").forEach((el) => {
     const ex = exById[draft.items[+el.dataset.thumb].exId];
-    mountFigure(el, [ex.poses[1]], { animate: false, stroke: 12, ground: false, front: ex.front });
+    mountFigure(el, [ex.poses[1]], { animate: false, stroke: 12, ground: false, front: ex.front, prop: ex.prop });
   });
 
   const title = document.getElementById("title");

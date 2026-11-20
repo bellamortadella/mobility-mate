@@ -267,6 +267,37 @@ const SIDE_BEND = { ...FRONT,
   head: [150, 44], neck: [140, 58], mid: [127, 82], hip: [117, 106],
   eA: [150, 84], hA: [151, 110], eB: [128, 32], hB: [154, 16] };
 
+// ---- Couch moves ----
+// Seated fold & reach: sit on the couch edge, wide stance, fold to the floor, then one arm to the sky.
+const COUCH_LEGS = { hip: [120, 122], kA: [158, 124], fA: [166, 184], kB: [82, 124], fB: [74, 184] };
+const COUCH_FOLD = { ...COUCH_LEGS, head: [120, 162], neck: [120, 146], mid: [120, 134],
+  eA: [132, 164], hA: [128, 184], eB: [108, 164], hB: [112, 184] };
+const COUCH_REACH = { ...COUCH_LEGS, head: [138, 128], neck: [126, 136], mid: [122, 130],
+  eA: [132, 104], hA: [139, 70], eB: [118, 160], hB: [112, 184] };
+
+// Seated cat-cow, side view: hands behind head, round forward then open tall.
+const COUCH_SEAT = { hip: [104, 128], kA: [140, 130], fA: [146, 184], kB: [136, 132], fB: [142, 184] };
+const COUCH_ROUND = { ...COUCH_SEAT, mid: [122, 104], neck: [140, 104], head: [150, 120],
+  eA: [154, 128], hA: [146, 110], eB: [150, 130], hB: [142, 112] };
+const COUCH_OPEN = { ...COUCH_SEAT, mid: [102, 100], neck: [106, 72], head: [112, 52],
+  eA: [86, 62], hA: [104, 46], eB: [90, 64], hB: [106, 48] };
+
+// Couch-arm side bend: lying sideways over the armrest, hands behind head.
+// The upper body keeps its shape and just rotates about the hip, so it stays side-on.
+const ARM_LIE = { hip: [112, 112], kA: [72, 104], fA: [30, 108], kB: [80, 128], fB: [56, 116] };
+const ARM_DRAPE = { ...ARM_LIE, mid: [138, 118], neck: [160, 132], head: [172, 148],
+  eA: [182, 126], hA: [180, 146], eB: [150, 156], hB: [166, 160] };
+const rotateUpper = (p, deg) => {
+  const a = (deg * Math.PI) / 180, c = Math.cos(a), s = Math.sin(a), [ox, oy] = p.hip, r = { ...p };
+  for (const k of ["mid", "neck", "head", "eA", "hA", "eB", "hB"]) {
+    const x = p[k][0] - ox, y = p[k][1] - oy;
+    r[k] = [ox + x * c + y * s, oy - x * s + y * c];
+  }
+  return r;
+};
+const ARM_UP = rotateUpper(ARM_DRAPE, 62);
+ARM_UP.mid = [ARM_UP.mid[0] + 4, ARM_UP.mid[1] + 4];
+
 const EXERCISES = [
   { id: "body-bounces", name: "Body Bounces", front: true,
     cue: "Stay loose. Small, springy hops.",
@@ -356,6 +387,15 @@ const EXERCISES = [
   { id: "side-bends", name: "Side Bends", front: true,
     cue: "Reach up and over. Slide the other hand down your leg.",
     poses: [SIDE_BEND, FRONT, mirror(SIDE_BEND), FRONT], pass: [1, 3] },
+  { id: "seated-fold-reach", name: "Seated Fold & Reach", front: true, prop: "couch-front",
+    cue: "Sit on the edge, feet wide. Fold to the floor, then reach one arm to the sky.",
+    poses: [COUCH_FOLD, COUCH_REACH, COUCH_FOLD, mirror(COUCH_REACH)], arcArms: true },
+  { id: "seated-cat-cow", name: "Seated Cat-Cow", front: false, prop: "couch-side",
+    cue: "Hands behind head. Round forward, elbows in. Open up tall, elbows wide.",
+    poses: [COUCH_ROUND, COUCH_OPEN] },
+  { id: "couch-arm-side-bend", name: "Couch-Arm Side Bend", front: true, sided: true, prop: "couch-arm",
+    cue: "Lie sideways over the armrest. Drape down into the stretch, then side-crunch up.",
+    poses: [ARM_DRAPE, ARM_UP] },
 ];
 
 // Pose used on the "done" screen.
